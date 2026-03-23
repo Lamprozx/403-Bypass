@@ -31,7 +31,7 @@
 
 [![Python](https://img.shields.io/badge/Python-100%25-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Lisensi: GPL v3](https://img.shields.io/badge/Lisensi-GPLv3-blue?style=flat-square)](LICENSE)
-[![Performance: High](https://img.shields.io/badge/Performance-High-🚀-brightgreen?style=flat-square)]()
+[![Performance: High](https://img.shields.io/badge/Performance-High%20%F0%9F%9A%80-brightgreen?style=flat-square)]()
 
 *A modular HTTP 403 bypass testing toolkit for authorized penetration testers and bug bounty hunters.*
 
@@ -241,7 +241,7 @@ Pull requests are welcome.
 
 [![Python](https://img.shields.io/badge/Python-100%25-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Lisensi: GPL v3](https://img.shields.io/badge/Lisensi-GPLv3-blue?style=flat-square)](LICENSE)
-[![Performa](https://img.shields.io/badge/Performa-Cepat-🚀-brightgreen?style=flat-square)]()
+[![Performa](https://img.shields.io/badge/Performa-Cepat%20%F0%9F%9A%80-brightgreen?style=flat-square)]()
 
 *Toolkit pengujian bypass HTTP 403 yang modular untuk penetration tester dan bug bounty hunter terotorisasi.*
 
