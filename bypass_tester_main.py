@@ -345,12 +345,13 @@ def parse_args():
         description="Bypass Tester — Advanced Security Testing Suite",
         formatter_class=argparse.RawTextHelpFormatter,
     )
+
     parser.add_argument(
         "url",
         nargs="?",
-        default="https://api-jdih.sukabumikota.go.id/databases/1",
-        help="Target URL (default: %(default)s)",
+        help="Target URL (required)",
     )
+
     parser.add_argument(
         "--modules",
         "-m",
@@ -363,30 +364,42 @@ def parse_args():
         default=["all"],
         help="Select modules to run (default: all)",
     )
+
     parser.add_argument(
         "--output", "-o", default=None, help="Save results to JSON file (optional)"
     )
+
     parser.add_argument(
         "--timeout", "-t", type=int, default=7,
         help="Per-request timeout in seconds (default: 7)",
     )
+
     parser.add_argument(
         "--burst", "-b", type=int, default=15,
         help="Number of concurrent requests for rate-limit test",
     )
+
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Show extra details"
     )
+
     parser.add_argument(
         "--threads", type=int, default=10, help="Thread count (default: 10)"
     )
+
     parser.add_argument(
         "--delay", type=float, default=0, help="Delay between requests in seconds"
     )
+
     parser.add_argument("--retries", type=int, default=1, help="Retry count on failure")
 
-    return parser.parse_args()
+    args = parser.parse_args()
 
+    if not args.url:
+        parser.print_help()
+        sys.exit(1)
+
+    return args
 
 BANNER = r"""
 
