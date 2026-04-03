@@ -16,6 +16,7 @@ CONFIG = {
     "delay": 0,
     "retries": 1,
     "timeout": 7,
+    "follow": False, 
 }
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -56,6 +57,15 @@ from modules.rate_limit_test import rate_limit_test
 from modules.json_fuzz_test import json_fuzz_test
 
 
+def is_redirect_without_param(original_url, response):
+    if response["status"] in (301, 302, 303, 307, 308):
+        location = response["headers"].get("Location", "")
+        if location:
+            if "?" not in original_url and "?" in location:
+                return True
+    return False
+
+
 def _req(
     url: str,
     method: str = "GET",
@@ -77,7 +87,7 @@ def _req(
                 headers=headers or {},
                 timeout=timeout,
                 verify=False,
-                allow_redirects=False,
+                allow_redirects=CONFIG["follow"],
             )
 
             if raw_body is not None:
@@ -241,9 +251,7 @@ def cors_tests(base_url: str) -> list[dict]:
         if acac.lower() == "true" and acao_act not in ("*", ""):
             vuln += " + CREDENTIALS"
 
-        label = f"Origin: {origin_val}"
-        print(f"  PRE {fmt(res_pre)} | ACT {fmt(res_act)} | ACAO={acao_act or '-'} {vuln}")
-        print(f"      {label}")
+        print(f"  Origin: {origin_val[:40]:<40} -> {fmt(res_act)} ACAO={acao_act} {vuln}")
         results.append(
             {
                 "type": "cors",
@@ -393,6 +401,13 @@ def parse_args():
 
     parser.add_argument("--retries", type=int, default=1, help="Retry count on failure")
 
+    parser.add_argument(
+        "--follow",
+        action="store_true",
+        default=False,
+        help="Follow redirects (301/302/307/308). Tanpa flag ini, redirect akan memunculkan warning.",
+    )
+
     args = parser.parse_args()
 
     if not args.url:
@@ -400,6 +415,7 @@ def parse_args():
         sys.exit(1)
 
     return args
+
 
 BANNER = r"""
 
@@ -410,7 +426,7 @@ BANNER = r"""
  ████████  ██    ██       ▀██            ██    ██    ████▀   ██    ██  ▄██▀▀▀██   ▀▀▀▀██▄   ▀▀▀▀██▄
       ██    ██▄▄██   █▄▄▄▄██▀            ██▄▄▄▄██     ███    ███▄▄██▀  ██▄▄▄███  █▄▄▄▄▄██  █▄▄▄▄▄██
       ▀▀     ▀▀▀▀     ▀▀▀▀▀              ▀▀▀▀▀▀▀      ██     ██ ▀▀▀     ▀▀▀▀ ▀▀   ▀▀▀▀▀▀    ▀▀▀▀▀▀
- ---By Lampros On Github  !                         ███      █
+ ---By Lampros On Github  !                         ███      █
 """
 
 
@@ -424,7 +440,36 @@ def main():
     print(f"⏱  Timeout : {args.timeout}s")
     print(f"📦 Modules : {', '.join(args.modules)}")
     print(f"🕒 Started : {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    print("❗ Hint: use --follow to follow redirects.")
     print("─" * 62)
+
+    probe = _req.__wrapped__(base_url) if hasattr(_req, "__wrapped__") else None
+
+    # Probe manual tanpa CONFIG["follow"] agar selalu raw
+    try:
+        _probe = requests.get(
+            base_url,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=args.timeout,
+            verify=False,
+            allow_redirects=False,
+        )
+        probe_status = _probe.status_code
+        probe_location = _probe.headers.get("Location", "")
+    except Exception:
+        probe_status = None
+        probe_location = ""
+
+    if probe_status in (301, 302, 303, 307, 308):
+        if not args.follow:
+            print(f"⚠  WARNING: Target url returned a redirect [{probe_status}]")
+            if probe_location:
+                print(f"   Location : {probe_location}")
+            print("   Use --follow to enable redirect handling.")
+            print("   Continuing without following redirects...\n")
+        else:
+            print(f"↪  Redirect [{probe_status}] detected → {probe_location}")
+            print("   --follow is enabled, all requests will follow redirects.\n")
 
     start = time.time()
     all_results: dict[str, list] = {}
@@ -432,6 +477,7 @@ def main():
     CONFIG["delay"] = args.delay
     CONFIG["retries"] = args.retries
     CONFIG["timeout"] = args.timeout
+    CONFIG["follow"] = args.follow  # <-- set follow ke CONFIG
 
     if run_all or "headers" in args.modules:
         all_results["headers"] = header_tests(base_url)
@@ -473,7 +519,6 @@ def main():
 
     elapsed = time.time() - start
     total = sum(len(v) for v in all_results.values())
-
     print("\n" + "═" * 62)
     print("  SUMMARY")
     print("═" * 62)
@@ -499,3 +544,4 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n\n⛔ Stopped by user! ")
+        
